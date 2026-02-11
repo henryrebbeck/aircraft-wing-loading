@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aircraft Wing Loading vs Landing Speed</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        .equation {
+            text-align: center;
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            color: #2c3e50;
+            font-family: 'Courier New', monospace;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .control-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        #chartContainer {
+            position: relative;
+            width: 100%;
+            height: 700px;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-line {
+            width: 40px;
+            height: 3px;
+        }
+
+        .legend-point {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #2c3e50;
+        }
+
+        #tooltip {
+            position: absolute;
+            background: rgba(44, 62, 80, 0.95);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            pointer-events: none;
+            display: none;
+            max-width: 350px;
+            font-size: 0.9em;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+
+        #tooltip h3 {
+            margin-bottom: 8px;
+            color: #3498db;
+            font-size: 1.1em;
+        }
+
+        #tooltip p {
+            margin: 4px 0;
+            line-height: 1.4;
+        }
+
+        #tooltip a {
+            color: #3498db;
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        #tooltip a:hover {
+            text-decoration: underline;
+        }
+
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+
+        .info-box h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #34495e;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✈️ Aircraft Wing Loading vs Landing Speed</h1>
+        <p class="subtitle">Interactive Visualization of Aerodynamic Performance</p>
+        
+        <div class="equation">
+            Landing Speed: U = 19.8 × √(W/S ÷ C<sub>L</sub>) mph
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <input type="checkbox" id="cl1" checked>
+                <label for="cl1">C<sub>L</sub> = 1.0</label>
+            </div>
+            <div class="control-group">
+                <input type="checkbox" id="cl15" checked>
+                <label for="cl15">C<sub>L</sub> = 1.5</label>
+            </div>
+            <div class="control-group">
+                <input type="checkbox" id="cl2" checked>
+                <label for="cl2">C<sub>L</sub> = 2.0</label>
+            </div>
+            <div class="control-group">
+                <input type="checkbox" id="cl25" checked>
+                <label for="cl25">C<sub>L</sub> = 2.5</label>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-line" style="background: #e74c3c;"></div>
+                <span>C<sub>L</sub> = 1.0</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #f39c12;"></div>
+                <span>C<sub>L</sub> = 1.5</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #27ae60;"></div>
+                <span>C<sub>L</sub> = 2.0</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #3498db;"></div>
+                <span>C<sub>L</sub> = 2.5</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-point" style="background: #9b59b6;"></div>
+                <span>Aircraft Data</span>
+            </div>
+        </div>
+
+        <div id="chartContainer">
+            <canvas id="chart"></canvas>
+            <div id="tooltip"></div>
+        </div>
+
+        <div class="info-box">
+            <h3>About This Visualization</h3>
+            <p>
+                <strong>Wing Loading (W/S):</strong> The aircraft's weight divided by wing area (lbs/sq ft). Higher wing loading means the aircraft needs more speed to generate sufficient lift.<br><br>
+                <strong>Lift Coefficient (C<sub>L</sub>):</strong> A measure of how efficiently the wing generates lift. Higher C<sub>L</sub> values (achieved with flaps, slats, etc.) allow slower landing speeds.<br><br>
+                <strong>Click on any aircraft point</strong> to see detailed specifications including takeoff weight, wing area, and reference links.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const aircraftData = [
+            {name: "Gossamer Albatross II", wingLoading: 0.4, landingSpeed: 9, maxTakeoff: 215, maxLanding: 215, wingArea: 488, takeoffSpeed: 10, link: "https://en.wikipedia.org/wiki/MacCready_Gossamer_Albatross", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Gossamer_Albatross_II.jpg/300px-Gossamer_Albatross_II.jpg"},
+            {name: "Modern Paraglider", wingLoading: 0.9, landingSpeed: 12, maxTakeoff: 235, maxLanding: 235, wingArea: 270, takeoffSpeed: 15, link: "https://en.wikipedia.org/wiki/Paragliding", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Paraglider_launch.jpg/300px-Paraglider_launch.jpg"},
+            {name: "Wright Flyer (1903)", wingLoading: 1.5, landingSpeed: 24, maxTakeoff: 750, maxLanding: 750, wingArea: 510, takeoffSpeed: 28, link: "https://en.wikipedia.org/wiki/Wright_Flyer", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Wright_Flyer_III_piloted_by_Orville_Wright_over_Huffman_Prairie%2C_1905.jpg/300px-Wright_Flyer_III_piloted_by_Orville_Wright_over_Huffman_Prairie%2C_1905.jpg"},
+            {name: "Modern Hang Glider", wingLoading: 1.9, landingSpeed: 20, maxTakeoff: 325, maxLanding: 325, wingArea: 170, takeoffSpeed: 25, link: "https://en.wikipedia.org/wiki/Hang_gliding", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Hang_glider_launching_from_Mount_Tamalpais.jpg/300px-Hang_glider_launching_from_Mount_Tamalpais.jpg"},
+            {name: "Sopwith Camel", wingLoading: 6.4, landingSpeed: 40, maxTakeoff: 1482, maxLanding: 1482, wingArea: 231, takeoffSpeed: 45, link: "https://en.wikipedia.org/wiki/Sopwith_Camel", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Sopwith_Camel.jpg/300px-Sopwith_Camel.jpg"},
+            {name: "Fokker Dr.I (Triplane)", wingLoading: 6.4, landingSpeed: 42, maxTakeoff: 1291, maxLanding: 1291, wingArea: 201, takeoffSpeed: 48, link: "https://en.wikipedia.org/wiki/Fokker_Dr.I", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Fokker_Dr.I_at_the_Deutsches_Museum.jpg/300px-Fokker_Dr.I_at_the_Deutsches_Museum.jpg"},
+            {name: "Taylor Aerocar III", wingLoading: 11.1, landingSpeed: 50, maxTakeoff: 2100, maxLanding: 2100, wingArea: 190, takeoffSpeed: 70, link: "https://en.wikipedia.org/wiki/Taylor_Aerocar", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Taylor_Aerocar_%28N101D%29.jpg/300px-Taylor_Aerocar_%28N101D%29.jpg"},
+            {name: "B-18 Bolo", wingLoading: 26.9, landingSpeed: 69, maxTakeoff: 27673, maxLanding: 26000, wingArea: 965, takeoffSpeed: 85, link: "https://en.wikipedia.org/wiki/Douglas_B-18_Bolo", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Douglas_B-18_Bolo_in_flight.jpg/300px-Douglas_B-18_Bolo_in_flight.jpg"},
+            {name: "Spitfire (Mk V)", wingLoading: 27.7, landingSpeed: 70, maxTakeoff: 6700, maxLanding: 6700, wingArea: 242, takeoffSpeed: 80, link: "https://en.wikipedia.org/wiki/Supermarine_Spitfire", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Spitfire_Mk_VB_BM597_in_flight_2014.jpg/300px-Spitfire_Mk_VB_BM597_in_flight_2014.jpg"},
+            {name: "Hawker Hurricane", wingLoading: 29.5, landingSpeed: 68, maxTakeoff: 7600, maxLanding: 7600, wingArea: 258, takeoffSpeed: 78, link: "https://en.wikipedia.org/wiki/Hawker_Hurricane", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Hawker_Hurricane_I_RAF_in_flight_1940.jpg/300px-Hawker_Hurricane_I_RAF_in_flight_1940.jpg"},
+            {name: "B-17 Flying Fortress", wingLoading: 38.7, landingSpeed: 90, maxTakeoff: 65500, maxLanding: 55000, wingArea: 1420, takeoffSpeed: 110, link: "https://en.wikipedia.org/wiki/Boeing_B-17_Flying_Fortress", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/B-17_Flying_Fortress.jpg/300px-B-17_Flying_Fortress.jpg"},
+            {name: "XB-70 Valkyrie", wingLoading: 55.6, landingSpeed: 200, maxTakeoff: 534700, maxLanding: 350000, wingArea: 6297, takeoffSpeed: 215, link: "https://en.wikipedia.org/wiki/North_American_XB-70_Valkyrie", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/North_American_XB-70A_Valkyrie_in_flight_%28cropped%29.jpg/300px-North_American_XB-70A_Valkyrie_in_flight_%28cropped%29.jpg"},
+            {name: "SR-71 Blackbird", wingLoading: 56.7, landingSpeed: 180, maxTakeoff: 140000, maxLanding: 102000, wingArea: 1800, takeoffSpeed: 230, link: "https://en.wikipedia.org/wiki/Lockheed_SR-71_Blackbird", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Lockheed_SR-71_Blackbird.jpg/300px-Lockheed_SR-71_Blackbird.jpg"},
+            {name: "Concorde", wingLoading: 63.5, landingSpeed: 187, maxTakeoff: 408000, maxLanding: 245000, wingArea: 3856, takeoffSpeed: 250, link: "https://en.wikipedia.org/wiki/Concorde", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Concorde_on_Bristol.jpg/300px-Concorde_on_Bristol.jpg"},
+            {name: "A-4 Skyhawk", wingLoading: 69.2, landingSpeed: 145, maxTakeoff: 24500, maxLanding: 18000, wingArea: 260, takeoffSpeed: 165, link: "https://en.wikipedia.org/wiki/Douglas_A-4_Skyhawk", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/A-4_Skyhawk_Blue_Angels.jpg/300px-A-4_Skyhawk_Blue_Angels.jpg"},
+            {name: "B-52 Stratofortress", wingLoading: 72.5, landingSpeed: 145, maxTakeoff: 488000, maxLanding: 290000, wingArea: 4000, takeoffSpeed: 165, link: "https://en.wikipedia.org/wiki/Boeing_B-52_Stratofortress", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/B-52H_static_display_arms_06.jpg/300px-B-52H_static_display_arms_06.jpg"},
+            {name: "Space Shuttle (Orbiter)", wingLoading: 76.0, landingSpeed: 225, maxTakeoff: 240000, maxLanding: 190000, wingArea: 2499, takeoffSpeed: 0, link: "https://en.wikipedia.org/wiki/Space_Shuttle_orbiter", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Space_Shuttle_Atlantis_landing_at_KSC_following_STS-122.jpg/300px-Space_Shuttle_Atlantis_landing_at_KSC_following_STS-122.jpg"},
+            {name: "B-29 Superfortress", wingLoading: 77.8, landingSpeed: 105, maxTakeoff: 135000, maxLanding: 135000, wingArea: 1736, takeoffSpeed: 125, link: "https://en.wikipedia.org/wiki/Boeing_B-29_Superfortress", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/B-29_in_flight.jpg/300px-B-29_in_flight.jpg"},
+            {name: "EA-6B Prowler", wingLoading: 86.0, landingSpeed: 150, maxTakeoff: 61500, maxLanding: 45500, wingArea: 529, takeoffSpeed: 170, link: "https://en.wikipedia.org/wiki/Grumman_EA-6B_Prowler", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/EA-6B_Prowler_of_VAQ-209_in_flight_2014.jpg/300px-EA-6B_Prowler_of_VAQ-209_in_flight_2014.jpg"},
+            {name: "F-104 Starfighter", wingLoading: 96.4, landingSpeed: 190, maxTakeoff: 25840, maxLanding: 18900, wingArea: 196, takeoffSpeed: 210, link: "https://en.wikipedia.org/wiki/Lockheed_F-104_Starfighter", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Lockheed_F-104_Starfighter_USAF.jpg/300px-Lockheed_F-104_Starfighter_USAF.jpg"},
+            {name: "Boeing 777-200", wingLoading: 96.6, landingSpeed: 155, maxTakeoff: 545000, maxLanding: 445000, wingArea: 4605, takeoffSpeed: 180, link: "https://en.wikipedia.org/wiki/Boeing_777", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Boeing_777-200ER_-_British_Airways_AN1476950.jpg/300px-Boeing_777-200ER_-_British_Airways_AN1476950.jpg"},
+            {name: "BAe 146-200", wingLoading: 97.4, landingSpeed: 125, maxTakeoff: 93000, maxLanding: 81000, wingArea: 832, takeoffSpeed: 135, link: "https://en.wikipedia.org/wiki/British_Aerospace_146", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/BAe_146-200_G-JEAO_%288490823347%29.jpg/300px-BAe_146-200_G-JEAO_%288490823347%29.jpg"},
+            {name: "Boeing 777-9 (777X)", wingLoading: 100.1, landingSpeed: 162, maxTakeoff: 775000, maxLanding: 557000, wingArea: 5562, takeoffSpeed: 182, link: "https://en.wikipedia.org/wiki/Boeing_777X", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Boeing_777X_First_Flight_%2849422370026%29_%28cropped%29.jpg/300px-Boeing_777X_First_Flight_%2849422370026%29_%28cropped%29.jpg"},
+            {name: "Boeing 787 Dreamliner", wingLoading: 104.7, landingSpeed: 167, maxTakeoff: 502500, maxLanding: 425000, wingArea: 4058, takeoffSpeed: 180, link: "https://en.wikipedia.org/wiki/Boeing_787_Dreamliner", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Boeing_787-8_N787BX_Boeing_Everett_Factory_2009.jpg/300px-Boeing_787-8_N787BX_Boeing_Everett_Factory_2009.jpg"},
+            {name: "MD-11", wingLoading: 117.9, landingSpeed: 165, maxTakeoff: 602500, maxLanding: 430000, wingArea: 3648, takeoffSpeed: 185, link: "https://en.wikipedia.org/wiki/McDonnell_Douglas_MD-11", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/KLM_MD-11_PH-KCE.jpg/300px-KLM_MD-11_PH-KCE.jpg"},
+            {name: "Glider (ASK-21)", wingLoading: 28.2, landingSpeed: 55, maxTakeoff: 1320, maxLanding: 1320, wingArea: 193, takeoffSpeed: 55, link: "https://en.wikipedia.org/wiki/Schleicher_ASK_21", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/ASK_21_D-1653_01.jpg/300px-ASK_21_D-1653_01.jpg"}
+        ];
+
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('tooltip');
+        const container = document.getElementById('chartContainer');
+
+        function resizeCanvas() {
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            console.log('Canvas size:', canvas.width, 'x', canvas.height);
+            drawChart();
+        }
+
+        const checkboxes = {
+            cl1: document.getElementById('cl1'),
+            cl15: document.getElementById('cl15'),
+            cl2: document.getElementById('cl2'),
+            cl25: document.getElementById('cl25')
+        };
+
+        window.addEventListener('resize', resizeCanvas);
+        
+        Object.values(checkboxes).forEach(cb => {
+            cb.addEventListener('change', drawChart);
+        });
+
+        resizeCanvas();
+
+        function drawChart() {
+            console.log('drawChart called, canvas dimensions:', canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const padding = 60;
+            const chartWidth = canvas.width - 2 * padding;
+            const chartHeight = canvas.height - 2 * padding;
+            console.log('Chart area:', chartWidth, 'x', chartHeight);
+
+            const maxWingLoading = 125;
+            const maxSpeed = 250;
+
+            function scaleX(wingLoading) {
+                return padding + (wingLoading / maxWingLoading) * chartWidth;
+            }
+
+            function scaleY(speed) {
+                return canvas.height - padding - (speed / maxSpeed) * chartHeight;
+            }
+
+            ctx.strokeStyle = '#e8e8e8';
+            ctx.lineWidth = 1;
+            
+            for (let i = 0; i <= 10; i++) {
+                const x = padding + (i / 10) * chartWidth;
+                ctx.beginPath();
+                ctx.moveTo(x, padding);
+                ctx.lineTo(x, canvas.height - padding);
+                ctx.stroke();
+            }
+            
+            for (let i = 0; i <= 10; i++) {
+                const y = canvas.height - padding - (i / 10) * chartHeight;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(padding + chartWidth, y);
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = '#bdc3c7';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(padding, padding, chartWidth, chartHeight);
+
+            ctx.fillStyle = '#7f8c8d';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.strokeStyle = '#bdc3c7';
+            ctx.lineWidth = 1;
+
+            for (let i = 0; i <= 5; i++) {
+                const x = padding + (i / 5) * chartWidth;
+                const wingLoading = (i / 5) * maxWingLoading;
+                ctx.beginPath();
+                ctx.moveTo(x, canvas.height - padding);
+                ctx.lineTo(x, canvas.height - padding + 5);
+                ctx.stroke();
+                ctx.fillText(wingLoading.toFixed(0), x, canvas.height - padding + 20);
+            }
+
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i <= 5; i++) {
+                const y = canvas.height - padding - (i / 5) * chartHeight;
+                const speed = (i / 5) * maxSpeed;
+                ctx.beginPath();
+                ctx.moveTo(padding - 5, y);
+                ctx.lineTo(padding, y);
+                ctx.stroke();
+                ctx.fillText(speed.toFixed(0), padding - 10, y);
+            }
+
+            ctx.save();
+            ctx.translate(20, canvas.height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillText('Landing Speed (mph)', 0, 0);
+            ctx.restore();
+
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText('Wing Loading (lbs/sq ft)', canvas.width / 2, canvas.height - 10);
+
+            const clValues = [
+                { value: 1.0, color: '#e74c3c', enabled: checkboxes.cl1.checked },
+                { value: 1.5, color: '#f39c12', enabled: checkboxes.cl15.checked },
+                { value: 2.0, color: '#27ae60', enabled: checkboxes.cl2.checked },
+                { value: 2.5, color: '#3498db', enabled: checkboxes.cl25.checked }
+            ];
+
+            clValues.forEach(cl => {
+                if (!cl.enabled) return;
+
+                ctx.strokeStyle = cl.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+
+                for (let wingLoading = 0.1; wingLoading <= maxWingLoading; wingLoading += 0.5) {
+                    const speed = 19.8 * Math.sqrt(wingLoading / cl.value);
+                    const x = scaleX(wingLoading);
+                    const y = scaleY(speed);
+
+                    if (wingLoading === 0.1) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+            });
+
+            aircraftData.forEach(aircraft => {
+                const x = scaleX(aircraft.wingLoading);
+                const y = scaleY(aircraft.landingSpeed);
+
+                ctx.fillStyle = '#9b59b6';
+                ctx.strokeStyle = '#2c3e50';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.stroke();
+            });
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const padding = 60;
+            const chartWidth = canvas.width - 2 * padding;
+            const chartHeight = canvas.height - 2 * padding;
+            const maxWingLoading = 125;
+            const maxSpeed = 250;
+
+            function scaleX(wingLoading) {
+                return padding + (wingLoading / maxWingLoading) * chartWidth;
+            }
+
+            function scaleY(speed) {
+                return canvas.height - padding - (speed / maxSpeed) * chartHeight;
+            }
+
+            let hoveredAircraft = null;
+
+            for (const aircraft of aircraftData) {
+                const x = scaleX(aircraft.wingLoading);
+                const y = scaleY(aircraft.landingSpeed);
+                const distance = Math.sqrt((mouseX - x) ** 2 + (mouseY - y) ** 2);
+
+                if (distance < 10) {
+                    hoveredAircraft = aircraft;
+                    break;
+                }
+            }
+
+            if (hoveredAircraft) {
+                canvas.style.cursor = 'pointer';
+                tooltip.style.display = 'block';
+                tooltip.innerHTML = `
+                    <h3>${hoveredAircraft.name}</h3>
+                    ${hoveredAircraft.image ? `<img src="${hoveredAircraft.image}" alt="${hoveredAircraft.name}" style="width: 100%; max-width: 250px; height: auto; border-radius: 6px; margin: 10px 0; display: block;" onerror="this.style.display='none';" crossorigin="anonymous">` : ''}
+                    <p><strong>Wing Loading:</strong> ${hoveredAircraft.wingLoading} lbs/sq ft</p>
+                    <p><strong>Landing Speed:</strong> ${hoveredAircraft.landingSpeed} mph</p>
+                    <p><strong>Takeoff Speed:</strong> ${hoveredAircraft.takeoffSpeed} mph</p>
+                    <p><strong>Max Takeoff Weight:</strong> ${hoveredAircraft.maxTakeoff.toLocaleString()} lbs</p>
+                    <p><strong>Max Landing Weight:</strong> ${hoveredAircraft.maxLanding.toLocaleString()} lbs</p>
+                    <p><strong>Wing Area:</strong> ${hoveredAircraft.wingArea} sq ft</p>
+                    ${hoveredAircraft.link ? `<p><a href="${hoveredAircraft.link}" target="_blank">More Info & Photos →</a></p>` : ''}
+                `;
+
+                const tooltipRect = tooltip.getBoundingClientRect();
+                let left = e.clientX - rect.left + 15;
+                let top = e.clientY - rect.top + 15;
+
+                if (left + tooltipRect.width > rect.width) {
+                    left = e.clientX - rect.left - tooltipRect.width - 15;
+                }
+                if (top + tooltipRect.height > rect.height) {
+                    top = e.clientY - rect.top - tooltipRect.height - 15;
+                }
+
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            } else {
+                canvas.style.cursor = 'default';
+                tooltip.style.display = 'none';
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            tooltip.style.display = 'none';
+        });
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const padding = 60;
+            const chartWidth = canvas.width - 2 * padding;
+            const chartHeight = canvas.height - 2 * padding;
+            const maxWingLoading = 125;
+            const maxSpeed = 250;
+
+            function scaleX(wingLoading) {
+                return padding + (wingLoading / maxWingLoading) * chartWidth;
+            }
+
+            function scaleY(speed) {
+                return canvas.height - padding - (speed / maxSpeed) * chartHeight;
+            }
+
+            for (const aircraft of aircraftData) {
+                const x = scaleX(aircraft.wingLoading);
+                const y = scaleY(aircraft.landingSpeed);
+                const distance = Math.sqrt((mouseX - x) ** 2 + (mouseY - y) ** 2);
+
+                if (distance < 10 && aircraft.link) {
+                    window.open(aircraft.link, '_blank');
+                    break;
+                }
+            }
+        });
+
+        drawChart();
+    </script>
+</body>
+</html>
