@@ -181,6 +181,10 @@
 
         <div class="controls">
             <div class="control-group">
+                <input type="checkbox" id="cl075" checked>
+                <label for="cl075">C<sub>L</sub> = 0.75</label>
+            </div>
+            <div class="control-group">
                 <input type="checkbox" id="cl1" checked>
                 <label for="cl1">C<sub>L</sub> = 1.0</label>
             </div>
@@ -201,10 +205,14 @@
         <div class="legend">
             <div class="legend-item">
                 <div class="legend-line" style="background: #e74c3c;"></div>
+                <span>C<sub>L</sub> = 0.75</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #e67e22;"></div>
                 <span>C<sub>L</sub> = 1.0</span>
             </div>
             <div class="legend-item">
-                <div class="legend-line" style="background: #f39c12;"></div>
+                <div class="legend-line" style="background: #f1c40f;"></div>
                 <span>C<sub>L</sub> = 1.5</span>
             </div>
             <div class="legend-item">
@@ -280,6 +288,7 @@
         }
 
         const checkboxes = {
+            cl075: document.getElementById('cl075'),
             cl1: document.getElementById('cl1'),
             cl15: document.getElementById('cl15'),
             cl2: document.getElementById('cl2'),
@@ -379,8 +388,9 @@
             ctx.fillText('Wing Loading (lbs/sq ft)', canvas.width / 2, canvas.height - 10);
 
             const clValues = [
-                { value: 1.0, color: '#e74c3c', enabled: checkboxes.cl1.checked },
-                { value: 1.5, color: '#f39c12', enabled: checkboxes.cl15.checked },
+                { value: 0.75, color: '#e74c3c', enabled: checkboxes.cl075.checked },
+                { value: 1.0, color: '#e67e22', enabled: checkboxes.cl1.checked },
+                { value: 1.5, color: '#f1c40f', enabled: checkboxes.cl15.checked },
                 { value: 2.0, color: '#27ae60', enabled: checkboxes.cl2.checked },
                 { value: 2.5, color: '#3498db', enabled: checkboxes.cl25.checked }
             ];
@@ -457,7 +467,7 @@
                 tooltip.style.display = 'block';
                 tooltip.innerHTML = `
                     <h3>${hoveredAircraft.name}</h3>
-                    ${hoveredAircraft.image ? `<img src="${hoveredAircraft.image}" alt="${hoveredAircraft.name}" style="width: 100%; max-width: 250px; height: auto; border-radius: 6px; margin: 10px 0; display: block;" onerror="this.style.display='none';" crossorigin="anonymous">` : ''}
+                    ${hoveredAircraft.image ? `<img src="${hoveredAircraft.image}" alt="${hoveredAircraft.name}" style="width: 100%; max-width: 250px; height: auto; border-radius: 6px; margin: 10px 0; display: block;" onerror="this.style.display='none';" referrerpolicy="no-referrer">` : ''}
                     <p><strong>Wing Loading:</strong> ${hoveredAircraft.wingLoading} lbs/sq ft</p>
                     <p><strong>Landing Speed:</strong> ${hoveredAircraft.landingSpeed} mph</p>
                     <p><strong>Takeoff Speed:</strong> ${hoveredAircraft.takeoffSpeed} mph</p>
